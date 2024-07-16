@@ -1,16 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:pomodoro/duration-provider.dart';
 import 'package:pomodoro/my_helper.dart';
 import 'dart:async';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 
-import 'package:pomodoro/setting_time.dart';
+import 'package:pomodoro/setting_time_dialog.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(PomodoroApp());
+  WidgetsFlutterBinding.ensureInitialized();
+
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => DurationsProvider(),
+      child: PomodoroApp(),
+    ),
+  );
 }
 
 class PomodoroApp extends StatelessWidget {
+  const PomodoroApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -66,6 +77,12 @@ class _PomodoroScreenState extends State<PomodoroScreen> {
 
     durationInSeconds = modeDurations[currentMode]!;
     durations = Map.from(modeDurations);
+
+    // DurationsProvider durationsProvider =
+    //     Provider.of<DurationsProvider>(context, listen: false);
+    // if (durationsProvider.durations.isEmpty) {
+    //   durationsProvider.updateDurations(modeDurations);
+    // }
   }
 
   void _initializeNotifications() async {
@@ -78,6 +95,10 @@ class _PomodoroScreenState extends State<PomodoroScreen> {
       setState(() {
         if (durationInSeconds > 0) {
           durationInSeconds--;
+
+          DurationsProvider durationsProvider =
+              Provider.of<DurationsProvider>(context, listen: false);
+          durationsProvider.updateDuration(currentMode, durationInSeconds);
         } else {
           timer.cancel(); // Stop the timer when the duration reaches 0
           _resetTimer();
@@ -92,63 +113,18 @@ class _PomodoroScreenState extends State<PomodoroScreen> {
     // TODO: Implement the logic to reset the timer
     // Reset the timer to its initial state, clearing any ongoing intervals and
     // resetting the completed cycles count.
-
+    DurationsProvider durationsProvider =
+        Provider.of<DurationsProvider>(context, listen: false);
     setState(() {
       countdownTimer?.cancel();
       durationInSeconds = modeDurations[currentMode]!;
-    });
-  }
-
-  void updateDuration(String key, int value) {
-    setState(() {
-      durations[key] = value;
-    });
-  }
-
-  void saveSettings() {
-    // Implement your logic to save the settings
-    // using the `durations` map
-    final int pomodoroDuration = durations['pomodoro']!;
-    final int shortBreakDuration = durations['shortBreak']!;
-    final int longBreakDuration = durations['longBreak']!;
-
-    setState(() {
-      modeDurations = {
-        'pomodoro': pomodoroDuration,
-        'shortBreak': shortBreakDuration,
-        'longBreak': longBreakDuration,
-      };
-    });
-
-    Navigator.of(context).pop();
-  }
-
-  void resetToDefault() {
-    setState(() {
-      modeDurations = {
-        'pomodoro': 3, // 25 minutes in seconds
-        'shortBreak': 300, // 5 minutes in seconds
-        'longBreak': 900, // 15 minutes in seconds
-      };
-      durations = Map.from(modeDurations);
+      durationsProvider.updateDuration(currentMode, durationInSeconds);
+      countdownTimer = null;
     });
   }
 
   void _configureDurations() {
     // TODO: Implement the logic to show dialog to configure durations
-
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (BuildContext context) => SettingsScreen(
-          initialDurations: modeDurations,
-          onDurationsUpdated: (Map<String, int> newDurations) {
-            setState(() {
-              modeDurations = newDurations;
-            });
-          },
-        ),
-      ),
-    );
   }
 
   void _showNotification(String mode) {
@@ -170,22 +146,29 @@ class _PomodoroScreenState extends State<PomodoroScreen> {
   }
 
   Widget _buildTimerText() {
-    int minutes = durationInSeconds ~/ 60; // Get the minutes
-    int seconds = durationInSeconds % 60; // Get the remaining seconds
+    return Consumer<DurationsProvider>(
+      builder: (context, durationsProvider, _) {
+        durations = durationsProvider.durations;
+        durationInSeconds = durationsProvider.durations[currentMode]!;
 
-    timeText = '$minutes:${seconds.toString().padLeft(2, '0')}';
-    return Text(
-      timeText,
-      style: const TextStyle(
-        fontSize: 80,
-        color: Colors.white,
-        fontWeight: FontWeight.bold,
-      ),
+        int minutes = durationInSeconds ~/ 60; // Get the minutes
+        int seconds = durationInSeconds % 60; // Get the remaining seconds
+
+        timeText = '$minutes:${seconds.toString().padLeft(2, '0')}';
+        return Text(
+          timeText,
+          style: const TextStyle(
+            fontSize: 80,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        );
+      },
     );
   }
 
   @override
-  Widget build(BuildContext context) {
+  Scaffold build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('$timeText | Pomodoro Timer'),
@@ -279,128 +262,11 @@ class _PomodoroScreenState extends State<PomodoroScreen> {
                   ),
                   const SizedBox(width: 10),
                   IconButton(
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return Dialog(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10.0),
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.all(8.0),
-                              width: 500,
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text(
-                                    'Pomodoro Duration:',
-                                    style: TextStyle(
-                                        fontSize: 16.0,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  TextFormField(
-                                    initialValue:
-                                        (modeDurations['pomodoro']! ~/ 60)
-                                            .toString(),
-                                    keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Minutes',
-                                    ),
-                                    onChanged: (value) {
-                                      final int? newValue =
-                                          int.tryParse(value) ??
-                                              modeDurations['pomodoro'];
-                                      updateDuration(
-                                          'pomodoro', newValue! * 60);
-                                    },
-                                  ),
-                                  const SizedBox(height: 16.0),
-                                  const Text(
-                                    'Short Break Duration:',
-                                    style: TextStyle(
-                                        fontSize: 16.0,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  TextFormField(
-                                    initialValue:
-                                        (modeDurations['shortBreak']! ~/ 60)
-                                            .toString(),
-                                    keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Minutes',
-                                    ),
-                                    onChanged: (value) {
-                                      final int? newValue =
-                                          int.tryParse(value) ??
-                                              modeDurations['shortBreak'];
-                                      updateDuration(
-                                          'shortBreak', newValue! * 60);
-                                    },
-                                  ),
-                                  const SizedBox(height: 16.0),
-                                  const Text(
-                                    'Long Break Duration:',
-                                    style: TextStyle(
-                                        fontSize: 16.0,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  TextFormField(
-                                    initialValue:
-                                        (modeDurations['longBreak']! ~/ 60)
-                                            .toString(),
-                                    keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Minutes',
-                                    ),
-                                    onChanged: (value) {
-                                      final int? newValue =
-                                          int.tryParse(value) ??
-                                              modeDurations['longBreak'];
-                                      updateDuration(
-                                          'longBreak', newValue! * 60);
-                                    },
-                                  ),
-                                  const SizedBox(height: 16.0),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      ElevatedButton(
-                                        onPressed: saveSettings,
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.blue,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                          ),
-                                        ),
-                                        child: const Text('Save',
-                                            style:
-                                                TextStyle(color: Colors.white)),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: resetToDefault,
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.blueGrey,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          'Refresh',
-                                          style: TextStyle(color: Colors.white),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      );
+                    onPressed: () async {
+                      final updatedDurations = await SettingTimeDialog.show(
+                          context,
+                          durations: durations);
+                      // Code to be executed after the dialog is closed
                     },
                     icon: const Icon(Icons.settings),
                     color: Colors.white,
@@ -415,6 +281,8 @@ class _PomodoroScreenState extends State<PomodoroScreen> {
   }
 
   Widget _buildButton(String text, {bool isSelected = false}) {
+    DurationsProvider durationsProvider =
+        Provider.of<DurationsProvider>(context, listen: false);
     return ElevatedButton(
       onPressed: () {
         setState(() {
@@ -430,7 +298,9 @@ class _PomodoroScreenState extends State<PomodoroScreen> {
           }
 
           countdownTimer?.cancel();
+          countdownTimer = null;
           durationInSeconds = modeDurations[currentMode]!;
+          durationsProvider.updateDuration(currentMode, durationInSeconds);
         });
       },
       style: ElevatedButton.styleFrom(
