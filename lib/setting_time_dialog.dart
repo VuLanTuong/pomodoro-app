@@ -44,11 +44,7 @@ class _SettingTimeDialogState extends State<SettingTimeDialog> {
   @override
   void initState() {
     super.initState();
-    // modeDurations = {
-    //   'pomodoro': 3, // 25 minutes in seconds
-    //   'shortBreak': 300, // 5 minutes in seconds
-    //   'longBreak': 900, // 15 minutes in seconds
-    // };
+
     _initializeDurations();
     pomodoroController = TextEditingController(
       text: formatDuration(
@@ -97,12 +93,7 @@ class _SettingTimeDialogState extends State<SettingTimeDialog> {
       durations['longBreak'] = longBreakDuration * 60;
     });
 
-    // print('save $pomodoroDuration');
-    // print('save $shortBreakDuration');
-    // print('save $longBreakDuration');
-
     final updatedDurations = durations;
-    // print('update $pomodoroDuration');
     durationsProvider.updateDurations(updatedDurations);
     durationsProvider.saveDurations(updatedDurations);
 
@@ -113,17 +104,18 @@ class _SettingTimeDialogState extends State<SettingTimeDialog> {
     final durationsProvider =
         Provider.of<DurationsProvider>(context, listen: false);
     setState(() {
-      durations = Map<String, int>.from(modeDurations);
-      pomodoroController.text =
-          (widget.durations['pomodoro']! ~/ 60).toString();
-      shortBreakController.text =
-          (widget.durations['shortBreak']! ~/ 60).toString();
-      longBreakController.text =
-          (widget.durations['longBreak']! ~/ 60).toString();
+      // durations = Map<String, int>.from(modeDurations);
+      // pomodoroController.text =
+      //     (widget.durations['pomodoro']! ~/ 60).toString();
+      // shortBreakController.text =
+      //     (widget.durations['shortBreak']! ~/ 60).toString();
+      // longBreakController.text =
+      //     (widget.durations['longBreak']! ~/ 60).toString();
+      modeDurations = durationsProvider.resetDurations();
+      durations = modeDurations;
     });
-
-    durations = modeDurations;
-    durationsProvider.updateDurations(modeDurations);
+    // durationsProvider.updateDurations(modeDurations);
+    Navigator.of(context).pop();
   }
 
   void updateDuration(String key, int value) {

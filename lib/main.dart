@@ -83,8 +83,6 @@ class _PomodoroScreenState extends State<PomodoroScreen> {
     countdownTimer?.cancel(); // Cancel any existing timer
     countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
-        print(durationInSeconds);
-        print(currentMode);
         if (durationInSeconds > 0) {
           durationInSeconds--;
 
@@ -132,12 +130,10 @@ class _PomodoroScreenState extends State<PomodoroScreen> {
         Provider.of<DurationsProvider>(context, listen: false);
     setState(() {
       countdownTimer?.cancel();
-
+      // modeDurations = durationsProvider.getDurations();
+      modeDurations = durationsProvider.resetDurations();
       durationInSeconds = modeDurations[currentMode]!;
 
-      // durationsProvider.updateDuration(currentMode, durationInSeconds);
-      modeDurations = durationsProvider.resetDurations();
-      // modeDurations = durationsProvider.getDurations();
       countdownTimer = null;
       completedCycles = 0;
     });
@@ -382,7 +378,9 @@ class _PomodoroScreenState extends State<PomodoroScreen> {
     return ElevatedButton(
       onPressed: () {
         setState(() {
-          modeDurations = durationsProvider.getDurations();
+          if (!isSwitchedOn) {
+            modeDurations = durationsProvider.resetDurations();
+          }
           if (text == 'pomodoro') {
             currentMode = 'pomodoro';
             durationInSeconds = modeDurations['pomodoro']!;

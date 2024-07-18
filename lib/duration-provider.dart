@@ -10,7 +10,7 @@ class DurationsProvider extends ChangeNotifier {
   Map<String, int> getDurations() {
     if (_durations.isEmpty || init.isEmpty) {
       init = {
-        'pomodoro': 3, // 25 minutes in seconds
+        'pomodoro': 1500, // 25 minutes in seconds
         'shortBreak': 300, // 5 minutes in seconds
         'longBreak': 900, // 15 minutes in seconds
       };
@@ -46,6 +46,11 @@ class DurationsProvider extends ChangeNotifier {
   Map<String, int> resetDurations() {
     notifyListeners();
     print("resetting durations $init");
+    init = {
+      'pomodoro': 1500, // 25 minutes in seconds
+      'shortBreak': 300, // 5 minutes in seconds
+      'longBreak': 900, // 15 minutes in seconds
+    };
     _durations = Map.from(init);
     return init;
   }
