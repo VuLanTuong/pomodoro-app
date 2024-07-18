@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:pomodoro/duration-provider.dart';
 import 'package:provider/provider.dart';
 
@@ -43,20 +44,42 @@ class _SettingTimeDialogState extends State<SettingTimeDialog> {
   @override
   void initState() {
     super.initState();
-    modeDurations = {
-      'pomodoro': 3, // 25 minutes in seconds
-      'shortBreak': 300, // 5 minutes in seconds
-      'longBreak': 900, // 15 minutes in seconds
-    };
+    // modeDurations = {
+    //   'pomodoro': 3, // 25 minutes in seconds
+    //   'shortBreak': 300, // 5 minutes in seconds
+    //   'longBreak': 900, // 15 minutes in seconds
+    // };
+    _initializeDurations();
     pomodoroController = TextEditingController(
-      text: (widget.durations['pomodoro']! ~/ 60).toString(),
+      text: formatDuration(
+          widget.durations['pomodoro'] ?? modeDurations['pomodoro']!),
     );
     shortBreakController = TextEditingController(
-      text: (widget.durations['shortBreak']! ~/ 60).toString(),
+      text: formatDuration(
+          widget.durations['shortBreak'] ?? modeDurations['shortBreak']!),
     );
     longBreakController = TextEditingController(
-      text: (widget.durations['longBreak']! ~/ 60).toString(),
+      text: formatDuration(
+          widget.durations['longBreak'] ?? modeDurations['longBreak']!),
     );
+  }
+
+  void _initializeDurations() {
+    DurationsProvider durationsProvider =
+        Provider.of<DurationsProvider>(context, listen: false);
+    setState(() {
+      durations = Map.from(durationsProvider.getDurations());
+    });
+  }
+
+  String formatDuration(int durationInSeconds) {
+    if (durationInSeconds < 60) {
+      final fraction = durationInSeconds / 60.0;
+      return fraction.toStringAsFixed(2);
+    } else {
+      final minutes = durationInSeconds ~/ 60;
+      return '$minutes';
+    }
   }
 
   void saveSettings(
@@ -74,9 +97,14 @@ class _SettingTimeDialogState extends State<SettingTimeDialog> {
       durations['longBreak'] = longBreakDuration * 60;
     });
 
+    // print('save $pomodoroDuration');
+    // print('save $shortBreakDuration');
+    // print('save $longBreakDuration');
+
     final updatedDurations = durations;
-    print('update $pomodoroDuration');
+    // print('update $pomodoroDuration');
     durationsProvider.updateDurations(updatedDurations);
+    durationsProvider.saveDurations(updatedDurations);
 
     Navigator.of(context).pop();
   }
@@ -126,6 +154,9 @@ class _SettingTimeDialogState extends State<SettingTimeDialog> {
               decoration: const InputDecoration(
                 labelText: 'Minutes',
               ),
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.allow(RegExp(r'^[0-9][0-9]*$')),
+              ],
             ),
             const SizedBox(height: 16.0),
             const Text(
@@ -138,6 +169,9 @@ class _SettingTimeDialogState extends State<SettingTimeDialog> {
               decoration: const InputDecoration(
                 labelText: 'Minutes',
               ),
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.allow(RegExp(r'^[0-9][0-9]*$')),
+              ],
             ),
             const SizedBox(height: 16.0),
             const Text(
@@ -150,6 +184,9 @@ class _SettingTimeDialogState extends State<SettingTimeDialog> {
               decoration: const InputDecoration(
                 labelText: 'Minutes',
               ),
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.allow(RegExp(r'^[0-9][0-9]*$')),
+              ],
             ),
             const SizedBox(height: 16.0),
             Row(
@@ -159,13 +196,19 @@ class _SettingTimeDialogState extends State<SettingTimeDialog> {
                   onPressed: () {
                     final int pomodoroDuration =
                         int.tryParse(pomodoroController.text) ??
-                            durations['pomodoro']! ~/ 60;
+                            (durations['pomodoro'] ??
+                                    modeDurations['pomodoro'])! ~/
+                                60;
                     final int shortBreakDuration =
                         int.tryParse(shortBreakController.text) ??
-                            durations['shortBreak']! ~/ 60;
+                            (durations['shortBreak'] ??
+                                    modeDurations['shortBreak'])! ~/
+                                60;
                     final int longBreakDuration =
                         int.tryParse(longBreakController.text) ??
-                            durations['longBreak']! ~/ 60;
+                            (durations['longBreak'] ??
+                                    modeDurations['longBreak'])! ~/
+                                60;
 
                     saveSettings(context, pomodoroDuration, shortBreakDuration,
                         longBreakDuration);

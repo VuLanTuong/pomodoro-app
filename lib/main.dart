@@ -54,7 +54,7 @@ class _PomodoroScreenState extends State<PomodoroScreen> {
 
   String currentMode = "pomodoro";
 
-  late Map<String, int> modeDurations;
+  late Map<String, int> modeDurations = {};
   Map<String, int> durations = {};
 
   late int durationInSeconds;
@@ -64,25 +64,15 @@ class _PomodoroScreenState extends State<PomodoroScreen> {
   Color buttonsColor = MyHelper.secondaryColor;
   Color accentColor = MyHelper.accentColor;
 
+  int completedCycles = 0;
+  int completedBreakCycles = 0;
+
+  bool isSwitchedOn = false;
+
   @override
   void initState() {
     super.initState();
     _initializeNotifications();
-
-    modeDurations = {
-      'pomodoro': 3, // 25 minutes in seconds
-      'shortBreak': 300, // 5 minutes in seconds
-      'longBreak': 900, // 15 minutes in seconds
-    };
-
-    durationInSeconds = modeDurations[currentMode]!;
-    durations = Map.from(modeDurations);
-
-    // DurationsProvider durationsProvider =
-    //     Provider.of<DurationsProvider>(context, listen: false);
-    // if (durationsProvider.durations.isEmpty) {
-    //   durationsProvider.updateDurations(modeDurations);
-    // }
   }
 
   void _initializeNotifications() async {
@@ -93,17 +83,42 @@ class _PomodoroScreenState extends State<PomodoroScreen> {
     countdownTimer?.cancel(); // Cancel any existing timer
     countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
+        print(durationInSeconds);
+        print(currentMode);
         if (durationInSeconds > 0) {
           durationInSeconds--;
 
           DurationsProvider durationsProvider =
               Provider.of<DurationsProvider>(context, listen: false);
           durationsProvider.updateDuration(currentMode, durationInSeconds);
-        } else {
+        } else if (!isSwitchedOn) {
+          countdownTimer = null;
           timer.cancel(); // Stop the timer when the duration reaches 0
           _resetTimer();
-          countdownTimer = null;
           _showNotification(currentMode);
+          // if (isSwitchedOn) {
+          //   completedCycles++;
+          // }
+        } else {
+          if (currentMode == 'pomodoro') {
+            completedCycles++;
+            if (completedCycles % 4 == 0 && completedCycles > 3) {
+              currentMode = 'longBreak';
+              durationInSeconds = modeDurations['longBreak']!;
+            } else {
+              currentMode = 'shortBreak';
+              durationInSeconds = modeDurations['shortBreak']!;
+            }
+          } else if (currentMode == 'shortBreak') {
+            currentMode = 'pomodoro';
+            durationInSeconds = modeDurations['pomodoro']!;
+          } else if (currentMode == 'longBreak') {
+            currentMode = 'pomodoro';
+            durationInSeconds = modeDurations['pomodoro']!;
+          }
+          DurationsProvider durationsProvider =
+              Provider.of<DurationsProvider>(context, listen: false);
+          durationsProvider.updateDuration(currentMode, durationInSeconds);
         }
       });
     });
@@ -117,9 +132,14 @@ class _PomodoroScreenState extends State<PomodoroScreen> {
         Provider.of<DurationsProvider>(context, listen: false);
     setState(() {
       countdownTimer?.cancel();
+
       durationInSeconds = modeDurations[currentMode]!;
-      durationsProvider.updateDuration(currentMode, durationInSeconds);
+
+      // durationsProvider.updateDuration(currentMode, durationInSeconds);
+      modeDurations = durationsProvider.resetDurations();
+      // modeDurations = durationsProvider.getDurations();
       countdownTimer = null;
+      completedCycles = 0;
     });
   }
 
@@ -145,11 +165,46 @@ class _PomodoroScreenState extends State<PomodoroScreen> {
     }
   }
 
+  Timer? pomodoroTimer;
+
+  void startPomodoroSequence() {
+    print("startPomodoroSequence");
+    void startTimer() {
+      countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        setState(() {
+          if (durationInSeconds > 0) {
+            durationInSeconds--;
+          } else {
+            timer.cancel();
+            completedCycles++;
+            if (completedCycles % 4 == 0 && completedCycles > 3) {
+              currentMode = 'longBreak';
+              durationInSeconds = modeDurations['longBreak']!;
+            } else {
+              currentMode = 'shortBreak';
+              durationInSeconds = modeDurations['shortBreak']!;
+            }
+
+            startTimer();
+          }
+        });
+      });
+    }
+
+    setState(() {
+      completedCycles = 0;
+      currentMode = 'pomodoro';
+      durationInSeconds = modeDurations['pomodoro']!;
+    });
+
+    startTimer();
+  }
+
   Widget _buildTimerText() {
     return Consumer<DurationsProvider>(
       builder: (context, durationsProvider, _) {
-        durations = durationsProvider.durations;
-        durationInSeconds = durationsProvider.durations[currentMode]!;
+        durations = durationsProvider.getDurations();
+        durationInSeconds = durationsProvider.getDurationByMode(currentMode);
 
         int minutes = durationInSeconds ~/ 60; // Get the minutes
         int seconds = durationInSeconds % 60; // Get the remaining seconds
@@ -165,6 +220,12 @@ class _PomodoroScreenState extends State<PomodoroScreen> {
         );
       },
     );
+  }
+
+  void toggleSwitch(bool value) {
+    setState(() {
+      isSwitchedOn = value;
+    });
   }
 
   @override
@@ -273,6 +334,41 @@ class _PomodoroScreenState extends State<PomodoroScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 50),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Completed cycles: $completedCycles',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 60),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    onPressed: () => _configureDurations(),
+                    icon: const Icon(Icons.star),
+                    color: const Color.fromARGB(255, 248, 224, 0),
+                  ),
+                  const Text(
+                    'Use the Pomodoro sequence: Pomodoro → short break, \n  repeat 4x,then one long break',
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                  const SizedBox(width: 20),
+                  Switch(
+                    value: isSwitchedOn,
+                    onChanged: toggleSwitch,
+                    activeColor: Colors.white,
+                  ),
+                ],
+              )
             ],
           ),
         ),
@@ -286,6 +382,7 @@ class _PomodoroScreenState extends State<PomodoroScreen> {
     return ElevatedButton(
       onPressed: () {
         setState(() {
+          modeDurations = durationsProvider.getDurations();
           if (text == 'pomodoro') {
             currentMode = 'pomodoro';
             durationInSeconds = modeDurations['pomodoro']!;
@@ -304,8 +401,7 @@ class _PomodoroScreenState extends State<PomodoroScreen> {
         });
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor:
-            isSelected ? Color.fromARGB(255, 223, 101, 0) : buttonsColorOnPress,
+        backgroundColor: isSelected ? accentColor : buttonsColorOnPress,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
