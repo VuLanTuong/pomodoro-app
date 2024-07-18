@@ -1,46 +1,58 @@
-# Pomodoro
+# 🍅 Pomodoro Instructions 🍅
 
 A Simple Pomodoro App for Flutter Learning Practice.
+
+
+![image](https://github.com/user-attachments/assets/87d066a7-f728-4bf2-9a96-10a57b644222)
+
+
 
 
 
 ## Install Flutter
 1. [Install Flutter](https://docs.flutter.dev/get-started/install)
 2. [Setup VSCode](https://docs.flutter.dev/get-started/editor?tab=vscode)
+3. The Flutter team recommends installing Visual Studio Code 1.77 or later and the Flutter extension for VS Code. This combination simplifies installing the Flutter SDK.
 
 ## Run App (on Windows)
 1. Open PowerShell:
    - Press `Win + S`, type `PowerShell`, and select "Windows PowerShell."
 
-2. Navigate to code repo:
+3. Clone code from repo:
+   ```
+   git clone https://github.com/VuLanTuong/pomodoro-app.git
+   ```
 
-For example, when code is located at ``pomodoro``:
-```
-cd pomodoro
-```
+   ```
+   cd pomodoro-app
+   ```
+   
+4. Install dependencies:
+   ```
+   flutter pub get
+   ```
+📝Tips: 
+     ```
+   flutter pub outdated
+     ```
+   The command will give you information about the current and latest versions of the packages used in your project, helping you identify which packages have newer versions available
 
-Install dependencies:
-```
-flutter pub get
-```
+5. Launch the web app at port ``8080``:
+   ```
+   flutter run -d chrome --web-port=8080
+   ```
 
-3. Launch web app at port ``8080``:
-```
-flutter run -d chrome --web-port=8080
-```
-Press `Q` or `Ctrl+C` to terminate app
+6. Press `Q` or `Ctrl+C` to terminate an app
 
-![Preview](preview.png "Preview")
 
-4. Edit code & Hot reload:
-- Add/edit code at VSCode
-- Switch to PowerShell terminal then press `r` to apply changes
+7. Edit code & Hot reload:
+   - Add/edit code at VSCode
+   - Switch to the PowerShell terminal then press `r` to apply changes
 
-## TODOs:
+## Features:
+Implement the functionality for the Pomodoro Timer app based on the provided code structure.
+The app should allow users to start, and reset the timer, as well as switch between Pomodoro, Short Break, and Long Break modes. The app should also keep track of the number of completed Pomodoro cycles and display notifications when each interval is completed.
 
-Implement the functionality for the Pomodoro Timer app based on the provided code structure. The app should allow users to start, and reset the timer, as well as switch between Pomodoro, Short Break, and Long Break modes. The app should also keep track of the number of completed Pomodoro cycles and display notifications when each interval is completed.
-
-To envison how this app should work, please visit a similar app here: https://studywithme.io/aesthetic-pomodoro-timer/
 
 ## Pomodoro / Short Break / Long Break Mechanism:
 
@@ -52,6 +64,23 @@ The Pomodoro Technique is a time management method that uses a timer to break wo
 
 3. Long Break: The Long Break interval is an extended rest period, usually lasting 15-30 minutes. It provides a longer break after completing a set of Pomodoro intervals. The Long Break allows the user to recharge and prepare for the next set of Pomodoro intervals. After the Long Break, the app should start a new set of Pomodoro intervals.
 The app should keep track of the number of completed Pomodoro cycles (1 cycle = Pomodoro + Short Break or Pomodoro + Long Break) and display it to the user.
+
+## Screenshots
+1. Main screen
+
+
+![image](https://github.com/user-attachments/assets/6b4617d5-e5e9-43a0-b2cd-0519db74bbca)
+
+
+
+
+
+3. Setting dialog
+
+
+
+![image](https://github.com/user-attachments/assets/c86a52a2-284c-4364-8305-34879357f0e9)
+
 
 
 ## Learning Sources:
